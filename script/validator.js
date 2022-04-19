@@ -5,9 +5,11 @@ const $$ = document.querySelectorAll.bind(document);
 
 // Constructor function
 function Validator(options) {
+	// save rules
+	var selectorRules = {};
 	// input handler
 	function removeError(inputElement) {
-		const formGroup = inputElement.closest(".form-group");
+		const formGroup = inputElement.closest(options.formGroup);
 		const formMessage = formGroup.querySelector(options.errorSelector);
 		if (formMessage.innerText) {
 			formMessage.innerText = "";
@@ -18,8 +20,28 @@ function Validator(options) {
 	// blur handler
 	// validating function,
 	function validate(inputElement, rule) {
-		let errorMessage = rule.test(inputElement.value);
-		const formGroup = inputElement.closest(".form-group");
+		var errorMessage;
+		// get rules for each input that was blur
+		var rules = selectorRules[rule.selector];
+		// for to assign rule for input, if meet the error condition, break the for loop
+		for (let i = 0; i < rules.length; i++) {
+			switch (inputElement.type) {
+				case "checkbox": case "radio": {
+					errorMessage = rules[i](
+						formElement.querySelector("input[checked]")
+					);
+					break;
+				}	
+				default: {
+						errorMessage = rules[i](inputElement.value);
+					}
+			}
+			if (errorMessage) {
+				break;
+			}
+		}
+
+		const formGroup = inputElement.closest(options.formGroup));
 		const formMessage = formGroup.querySelector(options.errorSelector);
 		if (errorMessage) {
 			formGroup.classList.add("invalid");
@@ -28,11 +50,53 @@ function Validator(options) {
 			formGroup.classList.remove("invalid");
 			formMessage.innerText = "";
 		}
+		return !errorMessage;
 	}
 
 	const formElement = $(options.form);
 	if (formElement) {
+		// handle submit form event
+		formElement.onsubmit = function (event) {
+			event.preventDefault();
+			var isValidForm = true;
+			options.rules.forEach(function (rule) {
+				let inputElement = formElement.querySelector(rule.selector);
+				var isValid = validate(inputElement, rule);
+				if (!isValid) {
+					isValidForm = false;
+				}
+			});
+
+			if (isValidForm) {
+				if (typeof options.onsubmit === "function") {
+					var enableInput = formElement.querySelectorAll(
+						"[name]:not([disable])"
+					);
+					var formValue = Array.from(enableInput).reduce(function (
+						value,
+						input
+					) {
+						value[input.name] = input.value;
+						return value;
+					},
+					{});
+					options.onsubmit(formValue);
+				}
+				// submit with default function
+				else {
+					formElement.submit();
+				}
+			}
+		};
+		// loop into rules and handle
 		options.rules.forEach(function (rule) {
+			// take all rule for all input
+			if (Array.isArray(selectorRules[rule.selector])) {
+				selectorRules[rule.selector].push(rule.test);
+			} else {
+				selectorRules[rule.selector] = [rule.test];
+			}
+
 			let inputElement = formElement.querySelector(rule.selector);
 			if (inputElement) {
 				// blur handling

@@ -73,10 +73,20 @@
 					Validator({
 						form: "#form-1",
 						errorSelector: ".form-message",
+						onsubmit: function (data) {
+							console.log(data);
+						},
+						formGroup: ".form-group",
 						rules: [
 							Validator.isRequired(
 								"#fullname",
 								"Vui lòng nhập đầy đủ họ tên của bạn"
+							),
+							Validator.isRequired("#email", "Vui long nhập trường này"),
+							Validator.isRequired("#password", "Vui long nhập trường này"),
+							Validator.isRequired(
+								"#password_confirmation",
+								"Vui long nhập trường này"
 							),
 							Validator.isEmail(
 								"#email",
